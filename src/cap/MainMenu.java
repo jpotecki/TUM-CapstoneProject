@@ -7,6 +7,7 @@ package cap;
 
 import com.googlecode.lanterna.gui.Action;
 import com.googlecode.lanterna.gui.GUIScreen;
+import static com.googlecode.lanterna.gui.GUIScreen.Position.CENTER;
 import com.googlecode.lanterna.gui.Window;
 import com.googlecode.lanterna.gui.component.Button;
 import com.googlecode.lanterna.gui.component.Label;
@@ -54,11 +55,11 @@ public class MainMenu extends Window {
 
     public MainMenu(GUIScreen gui) {
         super(" Main Menu ");
-        addComponent(new Button("test"));
+        addComponent(new Label());
         addComponent(new Button("New Game", new Action() {
             @Override
             public void doAction() {
-                gui.showWindow(new ListAllAvailableMaps(gui));
+                gui.showWindow(new ListAllAvailableMaps(gui), CENTER);
             }
 
         }));

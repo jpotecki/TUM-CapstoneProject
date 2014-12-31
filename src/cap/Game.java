@@ -6,6 +6,7 @@
 package cap;
 
 import com.googlecode.lanterna.gui.GUIScreen;
+import static com.googlecode.lanterna.gui.GUIScreen.Position.CENTER;
 import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.terminal.Terminal;
 
@@ -55,7 +56,7 @@ public class Game {
 
                 // show the GUIScreen and the ingame menu
                 gui.getScreen().startScreen();
-                gui.showWindow(submenu);
+                gui.showWindow(submenu, CENTER);
             }
         }
     }

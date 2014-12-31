@@ -7,6 +7,7 @@ package cap;
 
 import com.googlecode.lanterna.TerminalFacade;
 import com.googlecode.lanterna.gui.GUIScreen;
+import static com.googlecode.lanterna.gui.GUIScreen.Position.CENTER;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.terminal.Terminal;
 
@@ -28,7 +29,7 @@ public class CapstoneProject {
         gui.getScreen().startScreen();
         
         MainMenu menue = new MainMenu(gui);
-        gui.showWindow(menue);
+        gui.showWindow(menue, CENTER);
 
     }
 
