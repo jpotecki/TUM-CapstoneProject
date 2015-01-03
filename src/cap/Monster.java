@@ -5,13 +5,15 @@
  */
 package cap;
 
+public class Monster extends MovingObjects {
 
-public class Monster extends LevelObjects {
-
-    public Monster(Game game, int x, int y) {
-        super(game, x, y);
+    public Monster(int x, int y, int value) {
+        super(x, y, value);
     }
 
-   
-    
+    @Override
+    public boolean isFieldMoveable(int x, int y) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
 }

@@ -38,6 +38,7 @@ public class MainMenu extends Window {
                     public void doAction() {
                         close();
                         Game game = new Game(gui);
+                        game.setMap("maps/" + s);
                         game.playGame();
                     }
                 }));

@@ -35,10 +35,6 @@ public class SubMainMenu extends Window {
             @Override
             public void doAction() {
                 close();
-                gui.getScreen().stopScreen();
-                gui.getScreen().getTerminal().clearScreen();
-                gui.getScreen().getTerminal().enterPrivateMode();
-
             }
 
         }));
