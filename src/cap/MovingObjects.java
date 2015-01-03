@@ -58,29 +58,5 @@ public abstract class MovingObjects {
         this.y = y;
     }
 
-    void move(int newx, int newy) {
-        
-        //! MISSING: just flip the fields if field is free
-        if (this.isFieldMoveable(newx, newy)) {
-            if (level.arrayExists(newx, newy)
-                    && level.arrayExists(this.x, this.y)) {
-
-                // safe the value of the field to be moved at newx,newy
-                int newvalue = level.getLevelValue(newx, newy);
-                
-                // apply the the value to my current field and print it
-                level.setLevelValue(this.x, this.y, newvalue);
-                level.printChar(this.x, this.y);
-                
-                // apply my value to the field at newx, newy and print
-                level.setLevelValue(newx, newy, this.value);
-                level.printChar(newx, newy);
-                
-                // update my location
-                this.x = newx;
-                this.y = newy;
-            }
-        }
-
-    }
+    abstract void move(int newx, int newy);
 }
