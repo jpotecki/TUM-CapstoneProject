@@ -21,13 +21,13 @@ public class CapstoneProject {
      * @param args the command line arguments
      */
     static Screen screen;
-    
-    public static void main(String[] args) {
- //       
 
-        GUIScreen gui = TerminalFacade.createGUIScreen();
+    public static void main(String[] args) {
+        //       
+        Terminal terminal = TerminalFacade.createSwingTerminal(100,30);
+        GUIScreen gui = TerminalFacade.createGUIScreen(terminal);
         gui.getScreen().startScreen();
-        
+
         MainMenu menue = new MainMenu(gui);
         gui.showWindow(menue, CENTER);
 

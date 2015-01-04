@@ -14,7 +14,12 @@ import com.googlecode.lanterna.input.Key;
 public class Player extends MovingObjects {
 
     private int live;
-    
+    private int keys = 0;
+
+    public int getKeys() {
+        return keys;
+    }
+
     public int getLive() {
         return live;
     }
@@ -23,14 +28,15 @@ public class Player extends MovingObjects {
         this.live = live;
     }
 
-    public Player(int x, int y) {
-        super(x, y, 7);
+    public Player() {
+        super(7);
     }
 
     @Override
     boolean isFieldMoveable(int x, int y) {
         return level.arrayExists(x, y)
-                && level.getLevelValue(x, y) != 0;
+                && level.getLevelValue(x, y) != 0
+                && level.getLevelValue(x, y) != 1;
     }
 
     public void movePlayer(Key key) {
@@ -53,7 +59,7 @@ public class Player extends MovingObjects {
 
     @Override
     void move(int newx, int newy) {
-        
+
         //! MISSING: just flip the fields if field is free
         if (this.isFieldMoveable(newx, newy)) {
             if (level.arrayExists(newx, newy)
@@ -61,15 +67,22 @@ public class Player extends MovingObjects {
 
                 // safe the value of the field to be moved at newx,newy
                 int newvalue = level.getLevelValue(newx, newy);
-                
+
+                // check if field is a key
+                if (newvalue == 5) {
+                    newvalue = level.getUnoccupiedField();
+                    this.keys++;
+                    level.printKeys();
+                }
+
                 // apply the the value to my current field and print it
                 level.setLevelValue(this.x, this.y, newvalue);
                 level.printChar(this.x, this.y);
-                
+
                 // apply my value to the field at newx, newy and print
                 level.setLevelValue(newx, newy, this.value);
                 level.printChar(newx, newy);
-                
+
                 // update my location
                 this.x = newx;
                 this.y = newy;
@@ -79,5 +92,3 @@ public class Player extends MovingObjects {
     }
 
 }
-
-

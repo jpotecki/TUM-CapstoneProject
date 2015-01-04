@@ -8,7 +8,6 @@ package cap;
 import com.googlecode.lanterna.gui.GUIScreen;
 import static com.googlecode.lanterna.gui.GUIScreen.Position.CENTER;
 import com.googlecode.lanterna.input.Key;
-import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.terminal.Terminal;
 import com.googlecode.lanterna.terminal.Terminal.ResizeListener;
 import com.googlecode.lanterna.terminal.TerminalSize;
@@ -20,7 +19,7 @@ import com.googlecode.lanterna.terminal.TerminalSize;
 public class Game {
 
     private boolean wannaPlay;    // wannaPlay = false kills the game
-
+    private boolean changedSize = false;
     private Level level;
 
     private final GUIScreen gui;
@@ -58,13 +57,14 @@ public class Game {
 
             @Override
             public void onResized(TerminalSize newSize) {
-
-                drawField(0, 0);
+  
+                drawField(true);
             }
         };
         terminal.addResizeListener(resize);
         // loops until user wants to quit playing
-        drawField(0, 0);
+
+        drawField();
         while (wannaPlay) {
 
             // print here the gamefield
@@ -74,6 +74,10 @@ public class Game {
 
             // moves the player on the field
             level.getPlayer().movePlayer(key);
+
+            if (checkIfRedrawIsNecessary(level.getPlayer())) {
+                drawField(false);
+            }
 
             if (key.getKind() == Key.Kind.Escape) {
 
@@ -87,7 +91,7 @@ public class Game {
                     gui.getScreen().stopScreen();
                     gui.getScreen().getTerminal().clearScreen();
                     gui.getScreen().getTerminal().enterPrivateMode();
-                    drawField(0,0);
+                    drawField(false);
                 }
             }
         }
@@ -106,48 +110,97 @@ public class Game {
         return key;
     }
 
-    private void drawField(int startCol, int startRow) {
+    private void drawField(){
+        drawField(true);
+    }
+    
+    private void drawField(boolean position) {
+        // draws the player, if postion true, player is centered
+        // else he starts at the border
+        
+        if (position == true) {
+        
 
-        level.setFirstCol(3);
-        level.setFirstRow(2);
+        int windowCols = gui.getScreen().getTerminal().getTerminalSize().getColumns();
+        int windowRows = gui.getScreen().getTerminal().getTerminalSize().getRows();
+        int playerX = level.getPlayer().getX();
+        int playerY = level.getPlayer().getY();
+        int levelCols = level.getCols();
+        int levelRows = level.getRows();
+
+        // get the starting col to print
+        if (windowCols < levelCols) {
+            // if the player starts at the left windowboarder
+            if (playerX == 0) {
+                level.setStartCol(0);
+
+                // if the player starts at the right windowboarder
+            } else if (playerX == levelCols - 1) {
+                level.setStartCol(levelCols - 1 - windowCols);
+                if (level.getStartCol() < 0) {
+                    level.setStartCol(0);
+                }
+            } else {
+                level.setStartCol(playerX - (windowCols / 2));
+                if ((playerX - (windowCols / 2)) < 0) {
+                    level.setStartCol(0);
+                }
+
+                if ((playerX + (windowCols / 2)) > levelCols) {
+                    level.setStartCol(levelCols - 1 - windowCols);
+                }
+
+            }
+        }
+
+        // get the starting row to print
+        if (windowRows < levelRows) {
+            // if the player starts at the top windowboarder
+            if (playerY == 0) {
+                level.setStartRow(0);
+
+                // if the player starts at the bottom windowboarder
+            } else if (playerY == levelRows - 1) {
+                level.setStartRow(levelRows - 1 - windowRows);
+                if (level.getStartRow() < 0) {
+                    level.setStartRow(0);
+                }
+            } else {
+                level.setStartRow(playerY - (windowRows / 2));
+
+                if ((playerY - (windowRows / 2)) < 0) {
+                    level.setStartRow(0);
+                }
+
+                if ((playerY + (windowRows / 2)) > levelRows) {
+                    level.setStartRow(levelRows - 1 - windowRows);
+                }
+
+            }
+        }
+        }
+        drawField(level.getStartCol(), level.getStartRow());
+    }
+
+    private void drawField(int startCol, int startRow) {
 
         // draws the first gamefield
         Terminal terminal = gui.getScreen().getTerminal();
         terminal.clearScreen();
 
-        // draw the players lives and collected keys
-        terminal.moveCursor(level.getFirstCol(), 0);
-        terminal.applyBackgroundColor(Terminal.Color.BLACK);
-        terminal.applyForegroundColor(Terminal.Color.WHITE);
-        terminal.putCharacter('L');
-        terminal.putCharacter('i');
-        terminal.putCharacter('v');
-        terminal.putCharacter('e');
-        terminal.putCharacter('s');
-        terminal.putCharacter(':');
-        terminal.putCharacter(' ');
+        level.printHeadInformations();
 
-        // print the lives
-        //terminal.putCharacter((char) (level.getLive() + '0'));
-        terminal.putCharacter(' ');
-        terminal.putCharacter('K');
-        terminal.putCharacter('e');
-        terminal.putCharacter('y');
-        terminal.putCharacter('s');
-        terminal.putCharacter(':');
-        terminal.putCharacter(' ');
-
-        // print the keys
-        terminal.putCharacter((char) (level.getKeys() + '0'));
-
-        int x = terminal.getTerminalSize().getColumns() - level.getFirstCol() - startCol;
+        // set the right boarder
+        int x = startCol + terminal.getTerminalSize().getColumns();
         if (x > level.getCols()) {
             x = level.getCols();
+            //   startCol = level.getCols() - terminal.getTerminalSize().getColumns();
         }
 
-        int y = terminal.getTerminalSize().getRows() - level.getFirstRow() - startRow;
+        int y = startRow + terminal.getTerminalSize().getRows() -1 ;
         if (y > level.getRows()) {
             y = level.getRows();
+            //  startRow = level.getRows() - terminal.getTerminalSize().getRows();
         }
 
         // !missing check if y and x > 0
@@ -155,9 +208,30 @@ public class Game {
         for (int i = startCol; i < x; i++) {
             for (int j = startRow; j < y; j++) {
 
-                level.printChar(i, j);
+                level.printChar(i - startCol, j - startRow , i, j);
             }
         }
+        level.printChar(level.getPlayer().getX() - startCol, level.getPlayer().getY() - startRow, level.getPlayer().getX(), level.getPlayer().getY());
+    }
 
+    private boolean checkIfRedrawIsNecessary(Player player) {
+        // check if player is < startCol
+        if (level.getPlayer().getX() < level.startCol) {
+            level.setStartCol( level.getPlayer().getX() - gui.getScreen().getTerminal().getTerminalSize().getColumns() + 1 );
+            return true;
+            // check if player is < startRow
+        } else if (level.getPlayer().getY() < level.startRow) {
+            level.setStartRow( level.getPlayer().getY() - gui.getScreen().getTerminal().getTerminalSize().getRows() + level.getFirstRow() + 1);
+            return true;
+            // check if player > startCol + terminalSize    
+        } else if (level.getPlayer().getX() >= level.startCol + gui.getScreen().getTerminal().getTerminalSize().getColumns() ) {
+            level.setStartCol( level.getPlayer().getX()   );
+            return true;
+        } else if (level.getPlayer().getY() >= level.startRow + gui.getScreen().getTerminal().getTerminalSize().getRows() - level.getFirstRow()) {
+            level.setStartRow( level.getPlayer().getY()  );
+            return true;
+        } else {
+            return false;
+        }
     }
 }

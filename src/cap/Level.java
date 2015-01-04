@@ -27,15 +27,43 @@ public class Level {
     private int[][] level;
     private int height;
     private int width;
-    private int keys = 0;
     private final int unoccupiedField = 6;
     private Player player;
-    private int firstCol;
-    private int firstRow;
 
-    public void setFirstCol(int firstCol) {
-        this.firstCol = firstCol;
+    private int firstRow = 1;
+    private int standardLives = 2;
+    int startCol = 0;
+
+    public int getUnoccupiedField() {
+        return unoccupiedField;
     }
+
+    public int getStartCol() {
+        return startCol;
+    }
+
+    public void setStartCol(int startCol) {
+        if (startCol > 0) {
+            this.startCol = startCol;
+        } else {
+            this.startCol = 0;
+        }
+
+    }
+
+    public int getStartRow() {
+        return startRow;
+    }
+
+    public void setStartRow(int startRow) {
+        if (startRow > 0) {
+            this.startRow = startRow;
+        } else {
+            this.startRow = 0;
+        }
+
+    }
+    int startRow = 0;
 
     public void setFirstRow(int firstRow) {
         this.firstRow = firstRow;
@@ -50,15 +78,8 @@ public class Level {
     }
 
     public Level(String dateiName) {
+        player = new Player();
         this.level = createLevel(dateiName);
-    }
-
-    public int getKeys() {
-        return keys;
-    }
-
-    public void setKeys(int keys) {
-        this.keys = keys;
     }
 
     public int getCols() {
@@ -96,10 +117,10 @@ public class Level {
 
         // return color for an unoccupied field
         if (level[x][y] == unoccupiedField) {
-            return new int[]{0, 0, 0};
+            return new int[]{255, 255, 255};
         } // wall
         else if (level[x][y] == 0) {
-            return new int[]{175, 175, 175};
+            return new int[]{100, 100, 100};
         } // entrace
         else if (level[x][y] == 1) {
             return new int[]{0, 0, 128};
@@ -115,6 +136,40 @@ public class Level {
         } // key
         else if (level[x][y] == 5) {
             return new int[]{255, 215, 0};
+        } // player
+        else if (level[x][y] == 7) {
+            return new int[]{0, 0, 0};
+        } else {
+            return new int[]{255, 255, 255};
+        }
+    }
+
+    public int[] getBGCharColor(int x, int y) {
+
+        // return color for an unoccupied field
+        if (level[x][y] == unoccupiedField) {
+            return new int[]{230, 230, 230};
+        } // wall
+        else if (level[x][y] == 0) {
+            return new int[]{100, 100, 100};
+        } // entrace
+        else if (level[x][y] == 1) {
+            return new int[]{0, 0, 128};
+        } // exit
+        else if (level[x][y] == 2) {
+            return new int[]{34, 139, 34};
+        } // trap
+        else if (level[x][y] == 3) {
+            return new int[]{210, 105, 30};
+        } // enemy
+        else if (level[x][y] == 4) {
+            return new int[]{255, 64, 64};
+        } // key
+        else if (level[x][y] == 5) {
+            return new int[]{255, 215, 0};
+        }// player
+        else if (level[x][y] == 7) {
+            return new int[]{230, 230, 230};
         } else {
             return new int[]{255, 255, 255};
         }
@@ -175,29 +230,31 @@ public class Level {
 
             // get the array positions and fill the values into the array
             int tmpH, tmpW;
+
             for (String key : prop.stringPropertyNames()) {
 
                 String value = prop.getProperty(key);
 
-                if (!key.equalsIgnoreCase("height") & !key.equalsIgnoreCase("width")) {
+                if (!key.equalsIgnoreCase("height") & !key.equalsIgnoreCase("width") & !key.equalsIgnoreCase("live")) {
 
                     tmpH = this.getXY(key)[0];
                     tmpW = this.getXY(key)[1];
                     // cp the value into the array
                     this.level[tmpH][tmpW] = value.charAt(0) - '0';
 
-                    // !missing: count all entraces and after that position player by chance
                     // check if value is an entrace
                     if (this.level[tmpH][tmpW] == 1) {
                         this.addEntryPoint(tmpH, tmpW);
-
                     }
 
+                    // set live of player
+                } else if (key.equalsIgnoreCase("live")) {
+                    this.standardLives = value.charAt(0) - '0';
                 }
             }
             // set playerposition to a entry point
             playerToRandomEntryPoint();
-
+            player.setLive(standardLives);
             return level;
 
         } catch (IOException ex) {
@@ -215,11 +272,7 @@ public class Level {
     }
 
     public void printChar(int x, int y) {
-        printChar(firstCol + x, firstRow + y, x, y);
-    }
-
-    public int getFirstCol() {
-        return firstCol;
+        printChar(x - startCol, y - startRow, x, y);
     }
 
     public int getFirstRow() {
@@ -227,12 +280,80 @@ public class Level {
     }
 
     public void printChar(int cursorX, int cursorY, int x, int y) {
-        terminal.moveCursor(cursorX, cursorY);
+        terminal.moveCursor(cursorX, cursorY + this.getFirstRow());
+        terminal.applyBackgroundColor(
+                this.getBGCharColor(x, y)[0],
+                this.getBGCharColor(x, y)[1],
+                this.getBGCharColor(x, y)[2]);
         terminal.applyForegroundColor(
                 this.getCharColor(x, y)[0],
                 this.getCharColor(x, y)[1],
                 this.getCharColor(x, y)[2]);
+
         terminal.putCharacter(this.getValue(x, y));
+    }
+
+    public void printHeadInformations() {
+        // draw the players lives and collected keys
+        terminal.moveCursor(0, 0);
+        terminal.applyBackgroundColor(Terminal.Color.BLACK);
+        terminal.applyForegroundColor(Terminal.Color.WHITE);
+        terminal.putCharacter('L');
+        terminal.putCharacter('i');
+        terminal.putCharacter('v');
+        terminal.putCharacter('e');
+        terminal.putCharacter('s');
+        terminal.putCharacter(':');
+
+        // print the lives
+        this.printLives();
+
+        terminal.putCharacter(' ');
+        terminal.putCharacter('K');
+        terminal.putCharacter('e');
+        terminal.putCharacter('y');
+        terminal.putCharacter('s');
+        terminal.putCharacter(':');
+        terminal.putCharacter(' ');
+
+        // print the keys
+        this.printKeys();
+        terminal.putCharacter(' ');        terminal.putCharacter(' ');
+        terminal.putCharacter('P');
+        terminal.putCharacter('r');
+        terminal.putCharacter('e');
+        terminal.putCharacter('s');
+        terminal.putCharacter('s');
+
+        terminal.putCharacter(' ');
+
+        terminal.putCharacter('E');
+        terminal.putCharacter('S');
+        terminal.putCharacter('C');
+        terminal.putCharacter(' ');
+        terminal.putCharacter('f');
+        terminal.putCharacter('o');
+        terminal.putCharacter('r');
+        terminal.putCharacter(' ');
+        terminal.putCharacter('M');
+        terminal.putCharacter('e');
+        terminal.putCharacter('n');
+        terminal.putCharacter('u');
+
+    }
+
+    public void printLives() {
+        terminal.moveCursor(7, 0);
+        terminal.applyBackgroundColor(Terminal.Color.BLACK);
+        terminal.applyForegroundColor(Terminal.Color.WHITE);
+        terminal.putCharacter((char) (this.getPlayer().getLive() + '0'));
+    }
+
+    public void printKeys() {
+        terminal.moveCursor(15, 0);
+        terminal.applyBackgroundColor(Terminal.Color.BLACK);
+        terminal.applyForegroundColor(Terminal.Color.WHITE);
+        terminal.putCharacter((char) (player.getKeys() + '0'));
     }
 
     public boolean playerSurvives(int x, int y) {
@@ -248,6 +369,9 @@ public class Level {
     }
 
     private void playerToRandomEntryPoint() {
+        // !missing : what to do, if no entry point is found
+        // or has a free field next to the entry point
+
         boolean positionSet = false;
         while (!positionSet) {
 
@@ -259,31 +383,36 @@ public class Level {
             // check if surrounding fields are free and set Playerposition     
             if (this.isStartingPosition(tmpH + 1, tmpW)) {
                 //this.playerPosition = new int[]{tmpH + 1, tmpW};
-                player = new Player(tmpH + 1, tmpW);
-                player.setLevel(this);
+                //player = new Player(tmpH + 1, tmpW);
+                //player.setLevel(this);
+                player.setXY(tmpH + 1, tmpW);
                 positionSet = true;
             } else if (this.isStartingPosition(tmpH, tmpW + 1)) {
                 //this.playerPosition = new int[]{tmpH, tmpW + 1};
-                player = new Player(tmpH, tmpW + 1);
-                player.setLevel(this);
+                //player = new Player(tmpH, tmpW + 1);
+                //player.setLevel(this);
+                player.setXY(tmpH, tmpW + 1);
                 positionSet = true;
 
             } else if (this.isStartingPosition(tmpH - 1, tmpW)) {
                 //this.playerPosition = new int[]{tmpH - 1, tmpW};
-                player = new Player(tmpH - 1, tmpW);
-                player.setLevel(this);
+                //player = new Player(tmpH - 1, tmpW);
+                //player.setLevel(this);
+                player.setXY(tmpH - 1, tmpW);
                 positionSet = true;
 
             } else if (this.isStartingPosition(tmpH, tmpW - 1)) {
                 //this.playerPosition = new int[]{tmpH, tmpW - 1};
-                player = new Player(tmpH, tmpW - 1);
-                player.setLevel(this);
+                //player = new Player(tmpH, tmpW - 1);
+                //player.setLevel(this);
+                player.setXY(tmpH, tmpW - 1);
                 positionSet = true;
 
             }
 
         }
         // write the player position into the level array
+        player.setLevel(this);
         this.level[player.getX()][this.player.getY()] = player.getValue();
 
     }

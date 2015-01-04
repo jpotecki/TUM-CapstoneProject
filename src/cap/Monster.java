@@ -8,7 +8,7 @@ package cap;
 public class Monster extends MovingObjects {
 
     public Monster(int x, int y, int value) {
-        super(x, y, value);
+        super(value);
     }
 
     @Override

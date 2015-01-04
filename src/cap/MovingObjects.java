@@ -20,9 +20,7 @@ public abstract class MovingObjects {
         this.level = level;
     }
 
-    public MovingObjects(int x, int y, int value) {
-        this.x = x;
-        this.y = y;
+    public MovingObjects(int value) {
         this.value = value;
     }
 
@@ -40,6 +38,11 @@ public abstract class MovingObjects {
 
     public void setValue(int value) {
         this.value = value;
+    }
+
+    public void setXY(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 
     public int getX() {
