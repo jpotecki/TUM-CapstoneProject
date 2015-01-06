@@ -5,6 +5,8 @@
  */
 package cap;
 
+import java.util.ArrayList;
+
 /**
  * Storage for all the Monsters in the game
  * @author jp
@@ -12,10 +14,12 @@ package cap;
 public class Monsters {
 
     private final Game game;
-   
+    private ArrayList<Monster> monsters;
 
     public Monsters(Game game) {
         this.game = game;
     }
 
+    
+    
 }

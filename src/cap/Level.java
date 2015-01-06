@@ -23,17 +23,18 @@ import java.util.Random;
 public class Level {
 
     private Terminal terminal;
-    private ArrayList<String> entryPoints = new ArrayList();
+    private final ArrayList<String> entryPoints = new ArrayList();
     private int[][] level;
     private int height;
     private int width;
     private final int unoccupiedField = 6;
-    private Player player;
-
+    private final Player player;
     private int firstRow = 1;
     private int standardLives = 2;
-    int startCol = 0;
-
+    private int startCol = 0;
+    private int startRow = 0;
+    
+    
     public int getUnoccupiedField() {
         return unoccupiedField;
     }
@@ -63,10 +64,14 @@ public class Level {
         }
 
     }
-    int startRow = 0;
+    
 
     public void setFirstRow(int firstRow) {
         this.firstRow = firstRow;
+    }
+
+    public Terminal getTerminal() {
+        return terminal;
     }
 
     public void setTerminal(Terminal terminal) {
