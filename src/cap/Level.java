@@ -5,15 +5,17 @@
  */
 package cap;
 
-import com.googlecode.lanterna.gui.GUIScreen;
-import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.terminal.Terminal;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Random;
+import java.util.logging.Logger;
 
 /**
  * Class to build the level
@@ -22,6 +24,8 @@ import java.util.Random;
  */
 public class Level {
 
+    private MovingObstaclesScope movingObst;
+    private Monsters monsters;
     private Terminal terminal;
     private final ArrayList<String> entryPoints = new ArrayList();
     private int[][] level;
@@ -33,10 +37,35 @@ public class Level {
     private int standardLives = 2;
     private int startCol = 0;
     private int startRow = 0;
-    
-    
+    private int startPositionX;
+    private int startPositionY;
+
+    public int getPlayerNr() {
+        return 7;
+    }
+
+    public int getMonsterNr() {
+        return 8;
+    }
+
+    public MovingObstaclesScope getMovingObst() {
+        return movingObst;
+    }
+
+    public int getStartPositionX() {
+        return startPositionX;
+    }
+
+    public int getStartPositionY() {
+        return startPositionY;
+    }
+
     public int getUnoccupiedField() {
         return unoccupiedField;
+    }
+
+    public Monsters getMonsters() {
+        return monsters;
     }
 
     public int getStartCol() {
@@ -64,7 +93,6 @@ public class Level {
         }
 
     }
-    
 
     public void setFirstRow(int firstRow) {
         this.firstRow = firstRow;
@@ -83,7 +111,7 @@ public class Level {
     }
 
     public Level(String dateiName) {
-        player = new Player();
+        player = new Player(this);
         this.level = createLevel(dateiName);
     }
 
@@ -99,6 +127,14 @@ public class Level {
         // returns the value at the position   
         if (level[x][y] == unoccupiedField) {
             return 32;
+        } else if (level[x][y] == this.getPlayerNr()) {
+            return 'P';
+        } else if (level[x][y] == this.getMonsterNr()) {
+            return 'm';
+        } else if (level[x][y] == 5) {
+            return 'k';
+        } else if (level[x][y] == 4 || level[x][y] == 3) {
+            return 't';
         } else {
             return (char) ('0' + level[x][y]);
         }
@@ -134,14 +170,17 @@ public class Level {
             return new int[]{34, 139, 34};
         } // trap
         else if (level[x][y] == 3) {
-            return new int[]{210, 105, 30};
+            return new int[]{230, 230, 230};
         } // enemy
         else if (level[x][y] == 4) {
-            return new int[]{255, 64, 64};
+            return new int[]{230, 230, 230};
         } // key
         else if (level[x][y] == 5) {
-            return new int[]{255, 215, 0};
-        } // player
+            return new int[]{0, 0, 0};
+        } // monster
+        else if (level[x][y] == this.getMonsterNr()) {
+            return new int[]{120, 0, 0};
+        }// player
         else if (level[x][y] == 7) {
             return new int[]{0, 0, 0};
         } else {
@@ -172,6 +211,9 @@ public class Level {
         } // key
         else if (level[x][y] == 5) {
             return new int[]{255, 215, 0};
+        } // monster
+        else if (level[x][y] == this.getMonsterNr()) {
+            return new int[]{230, 230, 230};
         }// player
         else if (level[x][y] == 7) {
             return new int[]{230, 230, 230};
@@ -208,72 +250,6 @@ public class Level {
         } catch (ArrayIndexOutOfBoundsException e) {
             return false;
         }
-    }
-
-    private int[][] createLevel(String dateiName) {
-
-        Properties prop = new Properties();
-        InputStream input = null;
-        try {
-            input = new FileInputStream("src/cap/" + dateiName);
-
-            // load a properties file
-            prop.load(input);
-
-            // get width and heigth of the level and create an array 
-            this.width = Integer.parseInt(prop.getProperty("Width"));
-            this.height = Integer.parseInt(prop.getProperty("Height"));
-
-            level = new int[width][height];
-
-            // fill array with unoccupiedField => the number for free fields
-            for (int i = 0; i < width; i++) {
-                for (int j = 0; j < height; j++) {
-                    level[i][j] = unoccupiedField;
-                }
-            }
-
-            // get the array positions and fill the values into the array
-            int tmpH, tmpW;
-
-            for (String key : prop.stringPropertyNames()) {
-
-                String value = prop.getProperty(key);
-
-                if (!key.equalsIgnoreCase("height") & !key.equalsIgnoreCase("width") & !key.equalsIgnoreCase("live")) {
-
-                    tmpH = this.getXY(key)[0];
-                    tmpW = this.getXY(key)[1];
-                    // cp the value into the array
-                    this.level[tmpH][tmpW] = value.charAt(0) - '0';
-
-                    // check if value is an entrace
-                    if (this.level[tmpH][tmpW] == 1) {
-                        this.addEntryPoint(tmpH, tmpW);
-                    }
-
-                    // set live of player
-                } else if (key.equalsIgnoreCase("live")) {
-                    this.standardLives = value.charAt(0) - '0';
-                }
-            }
-            // set playerposition to a entry point
-            playerToRandomEntryPoint();
-            player.setLive(standardLives);
-            return level;
-
-        } catch (IOException ex) {
-            System.out.println(ex);
-        } finally {
-            if (input != null) {
-                try {
-                    input.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return null;
     }
 
     public void printChar(int x, int y) {
@@ -323,7 +299,8 @@ public class Level {
 
         // print the keys
         this.printKeys();
-        terminal.putCharacter(' ');        terminal.putCharacter(' ');
+        terminal.putCharacter(' ');
+        terminal.putCharacter(' ');
         terminal.putCharacter('P');
         terminal.putCharacter('r');
         terminal.putCharacter('e');
@@ -347,6 +324,11 @@ public class Level {
 
     }
 
+    public boolean isSecureStartingArea(int x, int y) {
+
+        return x == this.startPositionX && y == this.startPositionY;
+    }
+
     public void printLives() {
         terminal.moveCursor(7, 0);
         terminal.applyBackgroundColor(Terminal.Color.BLACK);
@@ -358,7 +340,7 @@ public class Level {
         terminal.moveCursor(15, 0);
         terminal.applyBackgroundColor(Terminal.Color.BLACK);
         terminal.applyForegroundColor(Terminal.Color.WHITE);
-        terminal.putCharacter((char) (player.getKeys() + '0'));
+        terminal.putCharacter((char) (this.getPlayer().getKeys() + '0'));
     }
 
     public boolean playerSurvives(int x, int y) {
@@ -385,32 +367,29 @@ public class Level {
             int tmpH = getXY(entryPoints.get(r))[0];
             int tmpW = getXY(entryPoints.get(r))[1];
 
+            this.startPositionX = tmpH;
+            this.startPositionY = tmpW;
+
             // check if surrounding fields are free and set Playerposition     
             if (this.isStartingPosition(tmpH + 1, tmpW)) {
-                //this.playerPosition = new int[]{tmpH + 1, tmpW};
-                //player = new Player(tmpH + 1, tmpW);
-                //player.setLevel(this);
                 player.setXY(tmpH + 1, tmpW);
+                this.startPositionX++;
+
                 positionSet = true;
             } else if (this.isStartingPosition(tmpH, tmpW + 1)) {
-                //this.playerPosition = new int[]{tmpH, tmpW + 1};
-                //player = new Player(tmpH, tmpW + 1);
-                //player.setLevel(this);
                 player.setXY(tmpH, tmpW + 1);
+                this.startPositionY++;
+
                 positionSet = true;
 
             } else if (this.isStartingPosition(tmpH - 1, tmpW)) {
-                //this.playerPosition = new int[]{tmpH - 1, tmpW};
-                //player = new Player(tmpH - 1, tmpW);
-                //player.setLevel(this);
                 player.setXY(tmpH - 1, tmpW);
+                this.startPositionX--;
                 positionSet = true;
 
             } else if (this.isStartingPosition(tmpH, tmpW - 1)) {
-                //this.playerPosition = new int[]{tmpH, tmpW - 1};
-                //player = new Player(tmpH, tmpW - 1);
-                //player.setLevel(this);
                 player.setXY(tmpH, tmpW - 1);
+                this.startPositionY--;
                 positionSet = true;
 
             }
@@ -422,4 +401,172 @@ public class Level {
 
     }
 
+    private int[][] createLevel(String dateiName) {
+        movingObst = new MovingObstaclesScope(this);
+        monsters = new Monsters(this);
+        boolean playerPositionIsSet = false;
+
+        Properties prop = new Properties();
+        InputStream input = null;
+        try {
+            input = new FileInputStream("src/cap/" + dateiName);
+
+            // load a properties file
+            prop.load(input);
+
+            // get width and heigth of the level and create an array 
+            this.width = Integer.parseInt(prop.getProperty("Width"));
+            this.height = Integer.parseInt(prop.getProperty("Height"));
+
+            level = new int[width][height];
+
+            // fill array with unoccupiedField => the number for free fields
+            for (int i = 0; i < width; i++) {
+                for (int j = 0; j < height; j++) {
+                    level[i][j] = unoccupiedField;
+                }
+            }
+
+            // get the array positions and fill the values into the array
+            int tmpH, tmpW;
+
+            for (String key : prop.stringPropertyNames()) {
+
+                String value = prop.getProperty(key);
+
+                if (!key.equalsIgnoreCase("height")
+                        & !key.equalsIgnoreCase("width")
+                        & !key.equalsIgnoreCase("lives")
+                        & !key.equalsIgnoreCase("keys")
+                        & !key.equalsIgnoreCase("startpositionX")
+                        & !key.equalsIgnoreCase("startpositionY")) {
+
+                    tmpH = this.getXY(key)[0];
+                    tmpW = this.getXY(key)[1];
+                    // cp the value into the array
+                    this.level[tmpH][tmpW] = value.charAt(0) - '0';
+
+                    // check if value is an entrace
+                    if (this.level[tmpH][tmpW] == 1) {
+                        this.addEntryPoint(tmpH, tmpW);
+                    }
+
+                    // check if value is a movingHint
+                    if (this.level[tmpH][tmpW] == 4) {
+                        movingObst.add(tmpH, tmpW);
+                    }
+
+                    // monsters
+                    if (this.level[tmpH][tmpW] == this.getMonsterNr()) {
+                        monsters.add(tmpH, tmpW);
+                    }
+
+                    if (this.level[tmpH][tmpW] == this.getPlayerNr()) {
+                        player.setXY(tmpH, tmpW);
+                        player.setLevel(this);
+                        playerPositionIsSet = true;
+                    }
+
+                    // set live of player
+                } else if (key.equalsIgnoreCase("lives")) {
+                    this.standardLives = Integer.parseInt(value);
+                    player.setLive(standardLives);
+
+                    // set keys
+                } else if (key.equalsIgnoreCase("keys")) {
+                    this.player.setKeys(Integer.parseInt(value));
+
+                    // set position
+                } else if (key.equalsIgnoreCase("startpositionX")) {
+                    this.startPositionX = Integer.parseInt(value);
+
+                } else if (key.equalsIgnoreCase("startpositionY")) {
+                    this.startPositionY = Integer.parseInt(value);
+                }
+            }
+            // set the targets for the moving obstacles
+            this.movingObst.setTargets();
+
+            // create the monsters if there are no monsters
+            if (monsters.isEmpty()) {
+                monsters.createMonsters(10);
+            }
+
+            // set playerposition to a entry point
+            if (!playerPositionIsSet) {
+                playerToRandomEntryPoint();
+                player.setLive(standardLives);
+            }
+
+            return level;
+
+        } catch (IOException ex) {
+            System.err.println(ex);
+        } finally {
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     *
+     * @param filename
+     * @return true, if the game was saved successfully
+     */
+    public boolean saveGameNewFile(String filename) {
+
+        try {
+            Properties properties = new Properties();
+
+            // iterate over the arr
+            for (int i = 0; i < level.length; i++) {
+                for (int j = 0; j < level[i].length; j++) {
+
+                    // save all fields except unoccupied fields
+                    if (level[i][j] != this.unoccupiedField) {
+                        properties.setProperty(i + "," + j, String.valueOf(level[i][j]));
+                    }
+                }
+            }
+
+            // save nr of keys
+            properties.setProperty("keys", String.valueOf(player.getKeys()));
+
+            // save nr of live
+            properties.setProperty("lives", String.valueOf(this.player.getLive()));
+
+            // save heigth and width
+            properties.setProperty("Width", String.valueOf(this.width));
+            properties.setProperty("Height", String.valueOf(this.height));
+
+            // save start position
+            properties.setProperty("startpositionX", String.valueOf(this.startPositionX));
+            properties.setProperty("startpositionY", String.valueOf(this.startPositionY));
+
+            //write file
+            //! Missing
+            // check if filename already exists in directory and change if neccessary
+            File file = new File("src/cap/" + filename);
+            try (FileOutputStream fileOut = new FileOutputStream(file)) {
+                properties.store(fileOut, "Saved Game");
+                fileOut.close();
+            }
+
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Level.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            return false;
+        } catch (IOException ex) {
+            Logger.getLogger(Level.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            return false;
+        }
+
+        // return true if everything got well
+        return true;
+    }
 }

@@ -22,15 +22,12 @@ public class CapstoneProject {
      */
     static Screen screen;
 
-    public static void main(String[] args) {
-        //       
+    public static void main(String[] args) {     
         Terminal terminal = TerminalFacade.createSwingTerminal(100,30);
         GUIScreen gui = TerminalFacade.createGUIScreen(terminal);
         gui.getScreen().startScreen();
-
         MainMenu menue = new MainMenu(gui);
         gui.showWindow(menue, CENTER);
-
     }
 
 }

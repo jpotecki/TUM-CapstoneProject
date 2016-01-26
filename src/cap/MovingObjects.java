@@ -61,5 +61,33 @@ public abstract class MovingObjects {
         this.y = y;
     }
 
-    abstract void move(int newx, int newy);
+    abstract boolean move(int newx, int newy);
+
+    /**
+     *
+     * @return true, if this object is in the visible window
+     */
+    public boolean inWindow() {
+        return this.x >= level.getStartCol() && this.x <= (level.getStartCol() + level.getTerminal().getTerminalSize().getColumns())
+                && this.y >= level.getStartRow() + level.getFirstRow() && this.y <= level.getStartRow() + level.getTerminal().getTerminalSize().getRows();
+    }
+
+    /**
+     *
+     * @return Returns a boolean[] Array <br>
+     * [0] true, if the object can move to the right<br>
+     * [1] true, if the object can move to the left<br>
+     * [2] true, if the object can move up [3] true, if the object can move down
+     */
+    public boolean[] possibleDirections() {
+        boolean[] result = new boolean[4];
+        result[0] = isFieldMoveable(this.x + 1, this.y);
+        result[1] = isFieldMoveable(this.x - 1, this.y);
+        result[2] = isFieldMoveable(this.x, this.y - 1);
+        result[3] = isFieldMoveable(this.x, this.y + 1);
+
+        return result;
+
+    }
+
 }

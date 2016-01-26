@@ -15,9 +15,18 @@ public class Player extends MovingObjects {
 
     private int live;
     private int keys = 0;
+    private boolean won = false;
+
+    public boolean isWon() {
+        return won;
+    }
 
     public int getKeys() {
         return keys;
+    }
+
+    public void setKeys(int keys) {
+        this.keys = keys;
     }
 
     public int getLive() {
@@ -28,8 +37,14 @@ public class Player extends MovingObjects {
         this.live = live;
     }
 
-    public Player() {
-        super(7);
+    public Player(Level level) {
+        super(level.getPlayerNr());
+    }
+
+    @Override
+    public void setXY(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 
     @Override
@@ -39,56 +54,76 @@ public class Player extends MovingObjects {
                 && level.getLevelValue(x, y) != 1;
     }
 
-    public void movePlayer(Key key) {
-        int x1 = this.x;
-        int y1 = this.y;
+    public boolean movePlayer(Key key) {
+        if (key != null) {
+            int x1 = this.x;
+            int y1 = this.y;
 
-        if (key.getKind() == Key.Kind.ArrowDown) {
-            y1++;
-        } else if (key.getKind() == Key.Kind.ArrowLeft) {
-            x1--;
-        } else if (key.getKind() == Key.Kind.ArrowRight) {
-            x1++;
-        } else if (key.getKind() == Key.Kind.ArrowUp) {
-            y1--;
+            if (key.getKind() == Key.Kind.ArrowDown) {
+                y1++;
+            } else if (key.getKind() == Key.Kind.ArrowLeft) {
+                x1--;
+            } else if (key.getKind() == Key.Kind.ArrowRight) {
+                x1++;
+            } else if (key.getKind() == Key.Kind.ArrowUp) {
+                y1--;
+            }
+            if (this.isFieldMoveable(x1, y1)) {
+                return move(x1, y1);
+            }
         }
-        if (this.isFieldMoveable(x1, y1)) {
-            move(x1, y1);
-        }
+        return true;
+
     }
 
     @Override
-    void move(int newx, int newy) {
+    boolean move(int newx, int newy) {
 
         //! MISSING: just flip the fields if field is free
         if (this.isFieldMoveable(newx, newy)) {
             if (level.arrayExists(newx, newy)
                     && level.arrayExists(this.x, this.y)) {
 
-                // safe the value of the field to be moved at newx,newy
-                int newvalue = level.getLevelValue(newx, newy);
+                if (level.getLevelValue(newx, newy) == level.getUnoccupiedField()
+                        || level.getLevelValue(newx, newy) == 5) {
 
-                // check if field is a key
-                if (newvalue == 5) {
-                    newvalue = level.getUnoccupiedField();
-                    this.keys++;
-                    level.printKeys();
+                    // safe the value of the field to be moved at newx,newy
+                    int newvalue = level.getLevelValue(newx, newy);
+
+                    // check if field is a key
+                    if (newvalue == 5) {
+                        newvalue = level.getUnoccupiedField();
+                        this.keys++;
+                        level.printKeys();
+                    }
+                    // apply the the value to my current field and print it
+                    level.setLevelValue(this.x, this.y, newvalue);
+                    level.printChar(this.x, this.y);
+
+                    // apply my value to the field at newx, newy and print
+                    level.setLevelValue(newx, newy, this.value);
+                    level.printChar(newx, newy);
+
+                    // update my location
+                    this.x = newx;
+                    this.y = newy;
+
+                } else if (level.getLevelValue(newx, newy) == 3
+                        || level.getLevelValue(newx, newy) == 4
+                        || level.getLevelValue(newx, newy) == level.getMonsterNr()) {
+
+                    level.setLevelValue(this.x, this.y, level.getUnoccupiedField());
+                    level.printChar(this.x, this.y);
+                    return false;
+
+                } else if (level.getLevelValue(newx, newy) == 2 && this.keys > 0) {
+                    this.won = true;
+
                 }
 
-                // apply the the value to my current field and print it
-                level.setLevelValue(this.x, this.y, newvalue);
-                level.printChar(this.x, this.y);
-
-                // apply my value to the field at newx, newy and print
-                level.setLevelValue(newx, newy, this.value);
-                level.printChar(newx, newy);
-
-                // update my location
-                this.x = newx;
-                this.y = newy;
             }
         }
-
+        return true;
     }
 
 }
